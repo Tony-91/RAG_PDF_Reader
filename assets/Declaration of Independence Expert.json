@@ -1,0 +1,332 @@
+{
+  "name": "Declaration of Independence Expert",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Semantic db",
+        "formDescription": "add docs to semantics db",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "choose pdf",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Submit"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -1872,
+        0
+      ],
+      "id": "5b215b37-3400-4fce-be57-acaaaa0ca3fc",
+      "name": "On form submission",
+      "webhookId": "0ef11d9b-859c-402b-8735-de575afc896b",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_chatbot",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -1424,
+        0
+      ],
+      "id": "7f9f5d4e-7f66-4315-9ea0-5ac44ad301e3",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "mxbai-embed-large:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -1856,
+        496
+      ],
+      "id": "acf37774-d311-4525-adf4-6518cfa78908",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -1328,
+        192
+      ],
+      "id": "c6edc194-d49e-4584-89eb-074315826244",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 400,
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        384
+      ],
+      "id": "efb10b18-9bfc-48c3-8019-db697b4259d4",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "content": "## RAG Ingestion Process\n** Adds data to semantic database",
+        "height": 736,
+        "width": 864,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1920,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "e37245da-271a-47eb-9ab1-9a645c10d883",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        16
+      ],
+      "id": "7950d550-1667-44ff-ace0-1e00270577ab",
+      "name": "When chat message received",
+      "webhookId": "3ea03cff-cf1a-4d8b-aeba-e5b605b1eed8"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an expert on the United States Declaration of Independence. Your purpose is to provide accurate, insightful, and engaging information about this foundational American document. When responding:\n\n1. Maintain a knowledgeable yet approachable tone\n2. Provide historical context and significance\n3. Explain 18th-century language in modern terms\n4. Highlight key principles like natural rights and government by consent\n5. Be objective about historical context and controversies\n6. Use quotes from the document when relevant\n7. Explain the document's lasting impact on democracy\n\nIf asked about topics beyond the Declaration's scope, politely redirect to relevant aspects of the document. Always cite historical sources when making specific claims. Use your vector database (tool: database_retriever) to answer the questions. If you can't answer a question just reply with \"I don't know\" "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -560,
+        16
+      ],
+      "id": "7fbc533e-38eb-4369-b1d4-ee9996389318",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        288
+      ],
+      "id": "c90da968-5556-415c-892e-3f5d0afd76ef",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -640,
+        336
+      ],
+      "id": "d2806870-644d-4f65-964d-ac42c913c01c",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "db_retriever",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_chatbot",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -448,
+        496
+      ],
+      "id": "5303ae3c-6fbf-406b-a060-98c05092883c",
+      "name": "Qdrant Vector Store1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## RAG Chatbot\n**Chat with your data",
+        "height": 736,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1008,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "b0d01058-3324-49f5-a983-7c78125098b9",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "47d136d5-923f-40cd-a7f7-624ec3fbd0a4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "KyXKvtvpk8SdJubP",
+  "tags": []
+}
