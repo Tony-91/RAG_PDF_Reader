@@ -1,0 +1,306 @@
+{
+  "name": "PDF Expert (Webhook)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-pdf",
+        "responseMode": "onReceived",
+        "options": {
+          "binaryData": true,
+          "responseData": "First entry JSON",
+          "responseHeaders": {}
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "rag-pdf-webhook",
+      "name": "Webhook",
+      "notes": "Receives PDF and questions from Streamlit app"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse the incoming webhook data\nconst fileData = $input.first().json.fields?.['choose pdf']?.[0]?.data;\nconst question = $input.first().json.question;\n\n// Return the data for the next nodes\nreturn {\n  json: {\n    fileData,\n    question,\n    fileName: $input.first().json.fields?.['choose pdf']?.[0]?.name || 'document.pdf'\n  }\n};"
+      },
+      "name": "Parse Webhook Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [400, 300],
+      "parameters": {
+        "functionCode": "// Get the binary file data\nconst binaryData = $input.first().binary?.file?.data;\nconst question = $input.first().json.question;\nconst fileName = $input.first().json.fields?.file?.filename || 'document.pdf';\n\n// Debug output\nconsole.log('Binary data available:', !!binaryData);\nconsole.log('File name:', fileName);\n\nreturn {\n  json: {\n    question,\n    fileName\n  },\n  binary: {\n    fileData: {\n      data: binaryData,\n      fileName: fileName,\n      mimeType: 'application/pdf'\n    }\n  }\n};"
+      },
+    {
+      "parameters": {
+        "operation": "saveToFile",
+        "filePath": "./temp_uploads/",
+        "options": {
+          "createDir": true
+        },
+        "fileName": "={{ $json.fileName || 'document.pdf' }}",
+        "dataPropertyName": "fileData"
+      },
+      "name": "Save PDF",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [800, 300],
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 400,
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "model": "mxbai-embed-large:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_chatbot",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [1400, 300],
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "db_retriever",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_chatbot",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [1400, 500],
+      "name": "Qdrant Vector Store (Retriever)",
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1600, 400],
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [1800, 400],
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an expert on the United States Declaration of Independence. Your purpose is to provide accurate, insightful, and engaging information about this foundational American document. When responding:\n\n1. Maintain a knowledgeable yet approachable tone\n2. Provide historical context and significance\n3. Explain 18th-century language in modern terms\n4. Highlight key principles like natural rights and government by consent\n5. Be objective about historical context and controversies\n6. Use quotes from the document when relevant\n7. Explain the document's lasting impact on democracy\n\nIf asked about topics beyond the Declaration's scope, politely redirect to relevant aspects of the document. Always cite historical sources when making specific claims. Use your vector database (tool: db_retriever) to answer the questions. If you can't answer a question just reply with \"I don't know\" "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [2000, 400],
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format the final response\nconst response = $input.first().json;\nreturn {\n  json: {\n    answer: response.text || response,\n    success: true\n  }\n};"
+      },
+      "name": "Format Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2200, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Webhook Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Webhook Data": {
+      "main": [
+        [
+          {
+            "node": "Save PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save PDF": {
+      "main": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "main": [
+        [
+          {
+            "node": "Recursive Character Text Splitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store (Retriever)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Embeddings Ollama",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Embeddings Ollama",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ollama Chat Model",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_memory": [
+        [
+          {
+            "node": "Simple Memory",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_tool": [
+        [
+          {
+            "node": "Qdrant Vector Store (Retriever)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ],
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Embeddings Ollama",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "version": 1,
+  "webhookId": "rag-pdf-webhook"
+}
