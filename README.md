@@ -1,4 +1,4 @@
-# Declaration of Independence reader - automated with n8n
+# Document Reader - automated with n8n
 
 Local and containerized **RAG system** using n8n, Ollama, and Qdrant that ingests PDFs of the Declaration of Independence and provides expert-level answers through a chat interface.
 
