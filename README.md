@@ -4,7 +4,7 @@ Local and containerized **RAG system** using n8n, Ollama, and Qdrant that ingest
 
 ![AI Starter Kit](https://raw.githubusercontent.com/Tony-91/Ai_starter/main/assets/n8n-demo.gif)
 # N8n Architecture Overview
-![AI Starter Kit](https://github.com/Tony-91/RAG_PDF_Reader/blob/main/assets/n8n.png/n8n.png)
+![AI Starter Kit](https://github.com/Tony-91/RAG_PDF_Reader/blob/main/assets/n8n.png)
 A local, containerized RAG (Retrieval Augmented Generation) system using:
 * n8n for workflow automation
 * Ollama for local LLM processing
